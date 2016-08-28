@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /*
  * This file is part of the zero package.
  * Copyright (c) 2012 olamedia <olamedia@gmail.com>
@@ -47,6 +47,11 @@ class nokogiri implements IteratorAggregate
         $this->loadHtml($htmlString);
     }
     
+    public static function init($htmlString = '')
+    {
+        return new self($htmlString);
+    }
+    
     public function getRegexp()
     {
         $tag = "(?P<tag>[a-z0-9]+)?";
@@ -55,41 +60,40 @@ class nokogiri implements IteratorAggregate
         $class = "(\.(?P<class>[^\s:>#\.]+))?";
         $child = "(first|last|nth)-child";
         $expr = "(\((?P<expr>[^\)]+)\))";
-        $pseudo = "(:(?P<pseudo>".$child.")".$expr."?)?";
+        $pseudo = "(:(?P<pseudo>". $child .")". $expr ."?)?";
+        
         $rel = "\s*(?P<rel>>)?";
-        $regexp = "/".$tag.$attr.$id.$class.$pseudo.$rel."/isS";
+        
+        $regexp = "/". $tag . $attr . $id . $class . $pseudo . $rel ."/isS";
+        
         return $regexp;
     }
     
     public static function fromHtml($htmlString)
     {
-        $me = new self();
-        $me->loadHtml($htmlString);
-        return $me;
+        return self::init()->loadHtml($htmlString);
     }
     
     public static function fromHtmlNoCharset($htmlString)
     {
-        $me = new self();
-        $me->loadHtmlNoCharset($htmlString);
-        return $me;
+        return self::init()->loadHtmlNoCharset($htmlString);
     }
     
     public static function fromDom($dom)
     {
-        $me = new self();
-        $me->loadDom($dom);
-        return $me;
+        return self::init()->loadDom($dom);
     }
     
     public function loadDom($dom)
     {
         $this->_dom = $dom;
+        
+        return $this;
     }
     
     public function loadHtmlNoCharset($htmlString = '')
     {
-        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom = new \DOMDocument('1.0', 'UTF-8');
         
         $dom->preserveWhiteSpace = false;
         
@@ -116,11 +120,13 @@ class nokogiri implements IteratorAggregate
         }
         
         $this->loadDom($dom);
+        
+        return $this;
     }
     
     public function loadHtml($htmlString = '')
     {
-        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom = new \DOMDocument('1.0', 'UTF-8');
         
         $dom->preserveWhiteSpace = false;
         
@@ -137,6 +143,8 @@ class nokogiri implements IteratorAggregate
         }
         
         $this->loadDom($dom);
+        
+        return $this;
     }
     
     public function getErrors()
@@ -154,9 +162,9 @@ class nokogiri implements IteratorAggregate
         return $this->getElements($this->getXpathSubquery($expression, false, $compile));
     }
     
-    protected function getNodes()
+    public function query($expression)
     {
-
+        return $this->getElements($expression);
     }
     
     public function getDom($asIs = false)
@@ -165,20 +173,20 @@ class nokogiri implements IteratorAggregate
             return $this->_dom;
         }
         
-        if ($this->_dom instanceof DOMDocument)
+        if ($this->_dom instanceof \DOMDocument)
         {
                 return $this->_dom;
         }
-        else if ($this->_dom instanceof DOMNodeList || $this->_dom instanceof DOMElement)
+        else if ($this->_dom instanceof \DOMNodeList || $this->_dom instanceof \DOMElement)
         {
             if ($this->_tempDom === null) {
-                $this->_tempDom = new DOMDocument('1.0', 'UTF-8');
+                $this->_tempDom = new \DOMDocument('1.0', 'UTF-8');
                 
                 $root = $this->_tempDom->createElement('root');
                 
                 $this->_tempDom->appendChild($root);
                 
-                if ($this->_dom instanceof DOMNodeList)
+                if ($this->_dom instanceof \DOMNodeList)
                 {
                     foreach ($this->_dom as $domElement) {
                         $domNode = $this->_tempDom->importNode($domElement, true);
@@ -199,7 +207,7 @@ class nokogiri implements IteratorAggregate
     protected function getXpath()
     {
         if ($this->_xpath === null) {
-            $this->_xpath = new DOMXpath($this->getDom());
+            $this->_xpath = new \DOMXpath($this->getDom());
         }
         
         return $this->_xpath;
@@ -297,16 +305,16 @@ class nokogiri implements IteratorAggregate
         return $query;
     }
     
-    protected function getElements($xpathQuery)
+    protected function getElements($xpathQuery, $returnNodeList = false)
     {
         if (strlen($xpathQuery)) {
             $nodeList = $this->getXpath()->query($xpathQuery);
             
             if ($nodeList === false) {
-                throw new Exception('Malformed xpath');
+                throw new \Exception('Malformed xpath');
             }
             
-            return self::fromDom($nodeList);
+            return $returnNodeList ? $nodeList : self::fromDom($nodeList);
         }
     }
     
@@ -320,13 +328,41 @@ class nokogiri implements IteratorAggregate
         return $this->getDom()->saveXML();
     }
     
+    public function toHtml()
+    {
+        $result = '';
+        
+        if ($this->_dom instanceof \DOMDocument)
+        {
+            if ($this->_dom->hasChildNodes()) {
+                foreach ($this->_dom->childNodes as $childNode) {
+                    $result .= $this->_dom->saveHTML($childNode);
+                }
+            }
+        }
+        else if ($this->_dom instanceof \DOMNodeList || $this->_dom instanceof \DOMElement)
+        {
+            $dom = $this->getDom();
+            
+            $nodes = $dom->getElementsByTagName('root');
+            
+            if ($nodes->item(0)->hasChildNodes()) {
+                foreach ($nodes->item(0)->childNodes as $childNode) {
+                    $result .= $dom->saveHTML($childNode);
+                }
+            }
+        }
+        
+        return $result;
+    }
+    
     public function toArray($xnode = null)
     {
         $array = array();
         
         if ($xnode === null)
         {
-            if ($this->_dom instanceof DOMNodeList) {
+            if ($this->_dom instanceof \DOMNodeList) {
                 foreach ($this->_dom as $node) {
                     $array[] = $this->toArray($node);
                 }
@@ -341,7 +377,7 @@ class nokogiri implements IteratorAggregate
             $node = $xnode;
         }
         
-        if (in_array($node->nodeType, array(XML_TEXT_NODE,XML_COMMENT_NODE))) {
+        if (in_array($node->nodeType, array(XML_TEXT_NODE, XML_COMMENT_NODE))) {
             return $node->nodeValue;
         }
         
@@ -365,10 +401,47 @@ class nokogiri implements IteratorAggregate
         return $array;
     }
     
+    public function getNodes()
+    {
+        return $this->getDom(true);
+    }
+    
+    /**
+     * 
+     * @return \ArrayIterator
+     */
+    public function items()
+    {
+        $a = array();
+        
+        if ($this->_dom instanceof \DOMNodeList)
+        {
+            foreach ($this->_dom as $domElement) {
+                $a[] = self::fromDom($domElement);
+            }
+        }
+        else if ($this->_dom instanceof \DOMElement)
+        {
+            $a[] = self::fromDom($this->_dom);
+        }
+        else
+        {
+            $node = $this->getDom();
+            
+            if ($node->hasChildnodes()) {
+                foreach ($node->childNodes as $childNode) {
+                    $a[] = self::fromDom($this->_dom);
+                }
+            }
+        }
+        
+        return $a;
+    }
+    
     public function getIterator()
     {
         $a = $this->toArray();
-        return new ArrayIterator($a);
+        return new \ArrayIterator($a);
     }
     
     protected function _toTextArray($node = null, $skipChildren = false, $singleLevel = true)
@@ -379,7 +452,7 @@ class nokogiri implements IteratorAggregate
             $node = $this->getDom();
         }
         
-        if ($node instanceof DOMNodeList) {
+        if ($node instanceof \DOMNodeList) {
             foreach ($node as $child) {
                 if ($singleLevel)
                 {
@@ -416,13 +489,94 @@ class nokogiri implements IteratorAggregate
         return $array;
     }
     
+    /**
+     * Возвращает массив содержащий текстовое содержимое каждого элемента дом дерева
+     * @param boolean $skipChildren
+     * @param boolean $singleLevel
+     * @return array
+     */
     public function toTextArray($skipChildren = false, $singleLevel = true)
     {
         return $this->_toTextArray($this->_dom, $skipChildren, $singleLevel);
     }
     
+    /**
+     * Возвращает текстовое содержимое дом дерева
+     * @param string $glue
+     * @param boolean $skipChildren
+     * @return string
+     */
     public function toText($glue = ' ', $skipChildren = false)
     {
         return implode($glue, $this->toTextArray($skipChildren, true));
+    }
+    
+    /**
+     * Аналогичен toText но не использует разделитель и удаляет с начала и конца строки лишние пробельные символы
+     * @param boolean $skipChildren
+     * @return string
+     */
+    public function text($skipChildren = false)
+    {
+        return trim($this->toText('', $skipChildren));
+}
+    
+    /**
+     * Возвращает значение атрибута элемента
+     * @param string $name
+     * @return mixed
+     */
+    public function attr($name, $firstChild = false)
+    {
+        if ($this->_dom instanceof \DOMNodeList)
+        {
+            foreach ($this->_dom as $domElement) {
+                if ($domElement->hasAttribute($name)) {
+                    return trim($domElement->getAttribute($name));
+                }
+                
+                if ($firstChild === true) {
+                    break;
+                }
+            }
+        }
+        else if ($this->_dom instanceof \DOMElement)
+        {
+            if ($this->_dom->hasAttribute($name)) {
+                return trim($this->_dom->getAttribute($name));
+            }
+        }
+        else
+        {
+            $node = $this->getDom();
+            
+            if ($node->hasChildNodes()) {
+                foreach ($node->childNodes as $childNode) {
+                    if ($childNode->hasAttribute($name)) {
+                        return trim($childNode->getAttribute($name));
+                    }
+                    
+                    if ($firstChild === true) {
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Удаляет из дерева найденные элементы
+     */
+    public function remove($expression, $xpath = false)
+    {
+        $nodeList = $this->getElements($this->getXpathSubquery($expression), true);
+        
+        foreach ($nodeList as $nodeElement) {
+            $nodeElement->parentNode->removeChild($nodeElement);
+        }
+        
+        return $this;
     }
 }
