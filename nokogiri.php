@@ -342,14 +342,10 @@ class nokogiri implements IteratorAggregate
         }
         else if ($this->_dom instanceof \DOMNodeList || $this->_dom instanceof \DOMElement)
         {
-            $dom = $this->getDom();
-            
-            $nodes = $dom->getElementsByTagName('root');
-            
-            if ($nodes->item(0)->hasChildNodes()) {
-                foreach ($nodes->item(0)->childNodes as $childNode) {
-                    $result .= $dom->saveHTML($childNode);
-                }
+            $nodes = $this->getDom()->getElementsByTagName('root')->item(0)->childNodes;
+
+            foreach ($nodes as $childNode) {
+                $result .= $childNode->ownerDocument->saveHTML($childNode);
             }
         }
         
