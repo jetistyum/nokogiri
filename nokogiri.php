@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /*
  * This file is part of the zero package.
  * Copyright (c) 2012 olamedia <olamedia@gmail.com>
@@ -36,7 +36,7 @@ class nokogiri implements IteratorAggregate
     protected $_xpath = null;
     
     /**
-     * @var libxmlErrors
+     * @var LibxmlError[]
      */
     protected $_libxmlErrors = null;
     
@@ -217,7 +217,7 @@ class nokogiri implements IteratorAggregate
     {
         if ($compile) {
             $key = $expression . ($rel ? '>' : '*');
-            
+
             if (isset(self::$_compiledXpath[$key])) {
                 return self::$_compiledXpath[$key];
             }

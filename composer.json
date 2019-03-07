@@ -1,9 +1,9 @@
 {
-    "name": "olamedia/nokogiri",
+    "name": "jetistyum/nokogiri",
     "type": "library",
     "description": "HTML Parser",
     "keywords": ["html","parse","parser"],
-    "homepage": "http://github.com/olamedia/nokogiri",
+    "homepage": "https://github.com/jetistyum/nokogiri",
     "license": "MIT",
     "authors": [
         {
@@ -11,10 +11,18 @@
             "email": "olamedia@gmail.com",
             "homepage": "http://github.com/olamedia",
             "role": "Developer"
+        },
+        {
+            "name": "jetistyum",
+            "email": "jetistyum@gm**l.com",
+            "homepage": "https://github.com/jetistyum",
+            "role": "Developer"
         }
     ],
     "require": {
-        "php": ">=5.0.0"
+        "php": ">=5.0.0",
+        "ext-dom": "*",
+        "ext-libxml": "*"
     },
     "autoload": {
         "classmap": ["nokogiri.php"]
